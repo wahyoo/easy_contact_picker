@@ -12,15 +12,19 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import androidx.annotation.NonNull;
+
+import io.flutter.embedding.engine.plugins.FlutterPlugin;
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
 import io.flutter.plugin.common.MethodChannel.Result;
+import io.flutter.embedding.engine.plugins.activity.ActivityAware;
+import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding;
 import io.flutter.plugin.common.PluginRegistry;
-import io.flutter.plugin.common.PluginRegistry.Registrar;
 
-/** EasyContactPickerPlugin */
-public class EasyContactPickerPlugin implements MethodCallHandler, PluginRegistry.ActivityResultListener {
+public class EasyContactPickerPlugin implements FlutterPlugin, MethodCallHandler,
+        ActivityAware, PluginRegistry.ActivityResultListener {
 
   private static final String CHANNEL = "plugins.flutter.io/easy_contact_picker";
   // 跳转原生选择联系人页面
@@ -29,21 +33,40 @@ public class EasyContactPickerPlugin implements MethodCallHandler, PluginRegistr
   static final String METHOD_CALL_LIST = "selectContactList";
   private Activity mActivity;
   private ContactsCallBack contactsCallBack;
+  private MethodChannel channel;
 
-  // 加个构造函数，入参是Activity
-  private EasyContactPickerPlugin(Activity activity) {
-    // 存起来
-    mActivity = activity;
+  @Override
+  public void onDetachedFromEngine(@NonNull FlutterPlugin.FlutterPluginBinding binding) {
+    channel.setMethodCallHandler(null);
   }
 
-  /** Plugin registration. */
-  public static void registerWith(Registrar registrar) {
-    //传入Activity
-    final EasyContactPickerPlugin plugin = new EasyContactPickerPlugin(registrar.activity());
-    final MethodChannel channel = new MethodChannel(registrar.messenger(), CHANNEL);
-    channel.setMethodCallHandler(plugin);
-    //添加跳转页面回调
-    registrar.addActivityResultListener(plugin);
+  @Override
+  public void onAttachedToActivity(@NonNull ActivityPluginBinding p0) {
+    this.mActivity = p0.getActivity();
+
+    p0.addActivityResultListener(this);
+  }
+
+  @Override
+  public void onReattachedToActivityForConfigChanges(ActivityPluginBinding activityPluginBinding) {
+    mActivity = activityPluginBinding.getActivity();
+    activityPluginBinding.addActivityResultListener(this);
+  }
+
+  @Override
+  public void onDetachedFromActivity() {
+    mActivity = null;
+  }
+
+  @Override
+  public void onAttachedToEngine(@NonNull FlutterPlugin.FlutterPluginBinding flutterPluginBinding) {
+    channel = new MethodChannel(flutterPluginBinding.getFlutterEngine().getDartExecutor(), CHANNEL);
+    channel.setMethodCallHandler(this);
+  }
+
+  @Override
+  public void onDetachedFromActivityForConfigChanges() {
+    mActivity = null;
   }
 
   @Override
@@ -89,7 +112,7 @@ public class EasyContactPickerPlugin implements MethodCallHandler, PluginRegistr
     mActivity.startActivityForResult(intent, 0x30);
   }
 
-  private void getContacts(){
+  private void getContacts() {
 
     //（实际上就是“sort_key”字段） 出来是首字母
     final String PHONE_BOOK_LABEL = "phonebook_label";
@@ -161,7 +184,7 @@ public class EasyContactPickerPlugin implements MethodCallHandler, PluginRegistr
   }
 
   /** 获取通讯录回调. */
-  public abstract class ContactsCallBack{
+  public abstract class ContactsCallBack {
     void successWithList(List<HashMap> contacts){};
     void successWithMap(HashMap<String, String> map){};
     void error(){};

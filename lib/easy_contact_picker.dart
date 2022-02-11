@@ -12,9 +12,10 @@ class EasyContactPicker {
   Future<List<Contact>> selectContacts() async {
     final List result = await _channel.invokeMethod('selectContactList');
     List<Contact> contacts = [];
-    result.forEach((f){
+    result.forEach((f) {
       contacts.add(new Contact.fromMap(f));
     });
+
     return contacts;
   }
 
@@ -22,7 +23,8 @@ class EasyContactPicker {
   ///
   /// return [Contact]。
   Future<Contact> selectContactWithNative() async {
-    final Map<dynamic, dynamic> result = await _channel.invokeMethod('selectContactNative');
+    final Map<dynamic, dynamic> result =
+        await _channel.invokeMethod('selectContactNative');
     return new Contact.fromMap(result);
   }
 }
@@ -32,10 +34,10 @@ class Contact {
   Contact({this.fullName, this.phoneNumber, this.firstLetter});
 
   factory Contact.fromMap(Map<dynamic, dynamic> map) => new Contact(
-    fullName: map['fullName'],
-    phoneNumber: map['phoneNumber'],
-    firstLetter: map['firstLetter'],
-  );
+        fullName: map['fullName'],
+        phoneNumber: map['phoneNumber'],
+        firstLetter: map['firstLetter'],
+      );
 
   /// The full name of the contact, e.g. "Dr. Daniel Higgens Jr.".
   final String? fullName;
